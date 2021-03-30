@@ -36,3 +36,16 @@ def DecayingParticle(tp):
         if (tp.child(chIdx).pdgId() == PDG):
             return DecayingParticle(tp.child(chIdx))
     return tp
+
+
+# To find the first mother particle from the decaying particle
+def MotherParticle(tp):
+    PDG = tp.pdgId()
+    # print("Particle " + str(PDG) + " nParents is: " + str(tp.nParents()))
+    for prIdx in xrange (tp.nParents()):
+    	# print("Parent's PDG id is: " + str(tp.parent(prIdx).pdgId()))
+        if (tp.parent(prIdx)==None):
+            continue
+        if (tp.parent(prIdx).pdgId() == PDG):
+            return MotherParticle(tp.parent(prIdx))
+    return tp

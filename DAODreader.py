@@ -1,7 +1,7 @@
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 from argparse import ArgumentParser
-from utils import readxAOD, DecayingParticle, getDSID
+from utils import readxAOD, DecayingParticle, MotherParticle, getDSID
 from tqdm import tqdm
 import logging
 
@@ -13,6 +13,7 @@ def getArguments():
         "--weights", nargs="*", default=["nominal", "K010", "K040", "K100", "K130", "K160"]
     )
     parser.add_argument("--lowmass", action="store_true")
+    parser.add_argument("--mass", type=int, default=0)
     parser.add_argument("-o", "--output", default="vlq_truth_histograms")
     return parser
 
@@ -26,11 +27,19 @@ def main():
     weight_to_run = {i for i in args.weights}
     # reweight to lower mass point (- 100 GeV from original point)
     if args.lowmass:
-        weightmap_move = 112 - 1
+        if args.mass == 1000:
+            # stupid sorting issue: the weight "M900" is higher ranked as a string than "M1000"
+            # therefore, the "low mass" weights are stored after the default weights
+            weightmap_move = 132 - 1
+        else:
+            weightmap_move = 112 - 1
         mass_tag = "_lowmass"
         logging.info("Store the low mass points.")
     else:
-        weightmap_move = 132 - 1
+        if args.mass == 1000:
+            weightmap_move = 112 - 1
+        else:
+            weightmap_move = 132 - 1
         mass_tag = ""
 
     # Set the Histograms sets
@@ -133,13 +142,25 @@ def main():
                     decaying_b = DecayingParticle(mother_b)
                 else:
                     logging.error("No VLB->bH decays found")
+                    decaying_B = None
                     continue
 
-        # check if Higgs is indeed decaying to a photon pair
-        if decaying_H.child(0).pdgId() != 22 or decaying_H.child(1).pdgId() != 22:
-            logging.error(
-                "Higgs is not decaying to gamma gamma! Event {evt}".format(evt=evt)
-            )
+            # for syntax including t-channel processes, there can also be no VLB in the event
+            if tp.absPdgId() == 25 and decaying_B==None and decaying_H == None and mother_H==None:
+                mother_H = MotherParticle(tp)
+                decaying_H = DecayingParticle(tp)
+            if tp.absPdgId() == 5 and decaying_B==None and decaying_b == None and mother_b==None:
+                mother_b = MotherParticle(tp)
+                decaying_b = DecayingParticle(tp)
+
+
+
+
+        # # check if Higgs is indeed decaying to a photon pair
+        # if decaying_H.child(0).pdgId() != 22 or decaying_H.child(1).pdgId() != 22:
+        #     logging.error(
+        #         "Higgs is not decaying to gamma gamma! Event {evt}".format(evt=evt)
+        #     )
 
         #########################
         # reconstruct kinematics

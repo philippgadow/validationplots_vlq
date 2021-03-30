@@ -8,9 +8,8 @@ source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh
 asetup 21.2,AthAnalysis,latest
 DxAOD="${1}"
 if [[ -z ${DxAOD} ]]; then
-    DxAOD="/nfs/dust/atlas/user/pgadow/MC/TRUTH/100005/DAOD_TRUTH1.mc16_13TeV.100005.192167.root"
+    DxAOD="/nfs/dust/atlas/user/pgadow/MC/TRUTH/101000/DAOD_TRUTH1.mc16_13TeV.101000.332744.root"
 fi
-
-mkdir run_weightcheck && cd run_weightcheck
+rm -rf run_weightcheck && mkdir run_weightcheck && cd run_weightcheck
 checkMetaSG.py ${DxAOD} | tee weights.txt
 cd -
