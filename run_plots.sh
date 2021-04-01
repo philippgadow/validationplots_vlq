@@ -1,8 +1,8 @@
 #!/bin/bash
 
-###################################################
-# Validation plots
-###################################################
+# ###################################################
+# # Validation plots
+# ###################################################
 # ZBHb mass 1000 GeV
 DIR_VALIDATION_ZBHb_1000="$PWD/data/validation/ZBHb_1000"
 PLOTDIR_VALIDATION_ZBHb_1000="$PWD/plots/validation/ZBHb_1000"

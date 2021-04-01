@@ -46,19 +46,19 @@ def main():
     histset = {}
     for wtsuffix in weight_to_run:
         histset["mB" + wtsuffix] = ROOT.TH1D(
-            "h_VLB_m_" + wtsuffix, "Mass of VLB", 145, 100.0, 3000.0
+            "h_VLB_m_" + wtsuffix, "Mass of VLB", 116, 100.0, 3000.0
         )
         histset["ptB" + wtsuffix] = ROOT.TH1D(
-            "h_VLB_pt_" + wtsuffix, "pT of VLB", 100, 0.0, 1000.0
+            "h_VLB_pt_" + wtsuffix, "pT of VLB", 50, 0.0, 1000.0
         )
         histset["mH" + wtsuffix] = ROOT.TH1D(
-            "h_H_m_" + wtsuffix, "Mass of Higgs", 100, 110.0, 140.0
+            "h_H_m_" + wtsuffix, "Mass of Higgs", 30, 110.0, 140.0
         )
         histset["ptH" + wtsuffix] = ROOT.TH1D(
-            "h_H_pt_" + wtsuffix, "pT of Higgs", 150, 0.0, 1500.0
+            "h_H_pt_" + wtsuffix, "pT of Higgs", 75, 0.0, 1500.0
         )
         histset["ptb" + wtsuffix] = ROOT.TH1D(
-            "h_b_pt_" + wtsuffix, "pT of b-quark", 150, 0.0, 1500.0
+            "h_b_pt_" + wtsuffix, "pT of b-quark", 75, 0.0, 1500.0
         )
     for key in histset.keys():
         histset[key].Sumw2()
@@ -88,8 +88,25 @@ def main():
         "K160": 20,
     }
 
+    # b-quark parent analytics
+    n_bparent = {
+        '6000007': 0, # VLB
+        '21': 0,      # gluon
+        '23': 0,      # Z boson
+        '24': 0,      # W boson
+        '25': 0,      # Higgs
+        '1': 0,       # quarks
+        '2': 0,
+        '3': 0,
+        '4': 0,
+        '5': 0,
+        '6': 0
+    }
+
+
     # loop over tree
-    for evnt in tqdm(range(t.GetEntriesFast())):
+    n_events = t.GetEntriesFast()
+    for evnt in tqdm(range(n_events)):
         t.GetEntry(evnt)
 
         # get weight (using the weight dict defined previously)
@@ -120,41 +137,46 @@ def main():
 
         decaying_B = None
         mother_H = None
-        mother_b = None
+        list_mother_b = []
         decaying_H = None
-        decaying_b = None
+        list_decaying_b = []
 
         # loop over truth particles to find the VLB, Higgs, and b-quark
         for tp in t.TruthParticles:
-            # find VLB
-            if tp.absPdgId() == 6000007 and decaying_B == None:
-                decaying_B = DecayingParticle(tp)
-                # find Higgs and b-quark
-                if decaying_B.child(0).pdgId() == 25:
-                    mother_H = decaying_B.child(0)
-                    mother_b = decaying_B.child(1)
-                    decaying_H = DecayingParticle(mother_H)
-                    decaying_b = DecayingParticle(mother_b)
-                elif decaying_B.child(1).pdgId() == 25:
-                    mother_H = decaying_B.child(1)
-                    mother_b = decaying_B.child(0)
-                    decaying_H = DecayingParticle(mother_H)
-                    decaying_b = DecayingParticle(mother_b)
-                else:
-                    logging.error("No VLB->bH decays found")
-                    decaying_B = None
-                    continue
-
-            # for syntax including t-channel processes, there can also be no VLB in the event
-            if tp.absPdgId() == 25 and decaying_B==None and decaying_H == None and mother_H==None:
-                mother_H = MotherParticle(tp)
+            # # find VLB
+            # if tp.absPdgId() == 6000007 and decaying_B == None:
+            #     decaying_B = DecayingParticle(tp)
+            #     # find Higgs and b-quark
+            #     if decaying_B.child(0).pdgId() == 25:
+            #         mother_H = decaying_B.child(0)
+            #         mother_b = decaying_B.child(1)
+            #         decaying_H = DecayingParticle(mother_H)
+            #         decaying_b = DecayingParticle(mother_b)
+            #     elif decaying_B.child(1).pdgId() == 25:
+            #         mother_H = decaying_B.child(1)
+            #         mother_b = decaying_B.child(0)
+            #         decaying_H = DecayingParticle(mother_H)
+            #         decaying_b = DecayingParticle(mother_b)
+            #     else:
+            #         logging.error("No VLB->bH decays found")
+            #         decaying_B = None
+            #         continue
+       
+            # for syntax including t-channel processes, there can also be no VLB in the truth record
+            # therefore, we go through truth record and check for particles in the hard scattering
+            # to identify the Higgs and the b-quark.
+            # we consider particles with status 22 (intermediate particles with conserved masses)
+            # and particles with status 23 (outgoing particles)
+            # http://home.thep.lu.se/~torbjorn/pythia81html/ParticleProperties.html
+            # https://twiki.cern.ch/twiki/bin/view/Main/PdgId
+            if tp.status() == 22 and tp.absPdgId() == 25 and decaying_H == None and mother_H==None:
+                mother_H = tp
                 decaying_H = DecayingParticle(tp)
-            if tp.absPdgId() == 5 and decaying_B==None and decaying_b == None and mother_b==None:
-                mother_b = MotherParticle(tp)
-                decaying_b = DecayingParticle(tp)
-
-
-
+            if tp.status() == 23 and tp.absPdgId() == 5:
+                # require that the b does not come from Higgs decay
+                if tp.parent(0) and not (tp.parent(0).absPdgId() == 25):
+                    list_mother_b.append(tp)
+                    list_decaying_b.append(DecayingParticle(tp))
 
         # # check if Higgs is indeed decaying to a photon pair
         # if decaying_H.child(0).pdgId() != 22 or decaying_H.child(1).pdgId() != 22:
@@ -166,17 +188,36 @@ def main():
         # reconstruct kinematics
         #########################
 
-        # reconstruct VLB
-        v_motherH = ROOT.TLorentzVector()
-        v_motherb = ROOT.TLorentzVector()
-        v_motherH.SetPtEtaPhiE(
-            mother_H.pt(), mother_H.eta(), mother_H.phi(), mother_H.e()
-        )
-        v_motherb.SetPtEtaPhiE(
-            mother_b.pt(), mother_b.eta(), mother_b.phi(), mother_b.e()
-        )
+        # reconstruct VLB and b-quark
         v_VLB = ROOT.TLorentzVector()
-        v_VLB = v_motherH + v_motherb
+        v_b = ROOT.TLorentzVector()
+        tp_b = None
+        for mother_b, decaying_b in zip(list_mother_b, list_decaying_b):
+            v_motherH = ROOT.TLorentzVector()
+            v_motherb = ROOT.TLorentzVector()
+            v_motherH.SetPtEtaPhiE(
+                mother_H.pt(), mother_H.eta(), mother_H.phi(), mother_H.e()
+            )
+            v_motherb.SetPtEtaPhiE(
+                mother_b.pt(), mother_b.eta(), mother_b.phi(), mother_b.e()
+            )
+            v_VLB_temp = ROOT.TLorentzVector()
+            v_VLB_temp = v_motherH + v_motherb
+
+            v_b_temp = ROOT.TLorentzVector()
+            v_b_temp.SetPtEtaPhiE(
+                decaying_b.pt(), decaying_b.eta(), decaying_b.phi(), decaying_b.e()
+            )
+
+            # consider as VLB mass maximum of Higgs + b quark mass
+            if v_VLB_temp.M() > v_VLB.M():
+                v_VLB = v_VLB_temp
+                v_b = v_b_temp
+                tp_b = mother_b
+
+        # evaluate b-quark parents
+        n_bparent[str(tp_b.parent(0).absPdgId())] += 1
+
 
         # reconstruct Higgs boson
         v_H = ROOT.TLorentzVector()
@@ -184,11 +225,7 @@ def main():
             decaying_H.pt(), decaying_H.eta(), decaying_H.phi(), decaying_H.e()
         )
 
-        # reconstruct b-quark
-        v_b = ROOT.TLorentzVector()
-        v_b.SetPtEtaPhiE(
-            decaying_b.pt(), decaying_b.eta(), decaying_b.phi(), decaying_b.e()
-        )
+        
 
         #########################
         # fill histograms
@@ -212,6 +249,12 @@ def main():
         histset[key].Write()
     histfile.Close()
 
+    print(n_bparent)
+    print('VLB: {0:.1f}%'.format(100.*n_bparent['6000007'] / n_events))
+    print('gluon: {0:.1f}%'.format(100.*n_bparent['21'] / n_events))
+    print('W/Z boson: {0:.1f}%'.format(100.*(n_bparent['23'] + n_bparent['24']) / n_events))
+    print('light quarks: {0:.1f}%'.format(100.*(n_bparent['1'] + n_bparent['2'] + n_bparent['3'] + n_bparent['4']) / n_events))
+    print('top quark: {0:.1f}%'.format(100.*n_bparent['6'] / n_events))
 
 if __name__ == "__main__":
     main()

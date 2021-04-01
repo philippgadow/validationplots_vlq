@@ -10,8 +10,8 @@ ampl.use_atlas_style(usetex=False)
 
 
 xlabels = {
-    "VLB_m": "VLB m [GeV]",
-    "VLB_pt": "VLB $p_{T}$ [GeV]",
+    "VLB_m": "(H + b) m [GeV]",
+    "VLB_pt": "(H + b) $p_{T}$ [GeV]",
     "H_m": "Higgs m [GeV]",
     "H_pt": "Higgs $p_{T}$ [GeV]",
     "b_pt": "b-quark $p_{T}$ [GeV]",
@@ -33,7 +33,7 @@ def getArguments():
     parser.add_argument(
         "--couplings",
         nargs="*",
-        default=["K010", "K040", "K050", "K100", "K130", "K160"],
+        default=["K010", "K040", "K100", "K130", "K160"],
     )
     parser.add_argument("--process", help="Name of process for legend")
     parser.add_argument("--mass", default=1400)
@@ -140,13 +140,6 @@ def makePlot(observable, histograms, mass, process, couplings, xTitle, yTitle, o
     for i, hists in enumerate(histograms):
         if closure:
             h, h_closure = hists
-            closure_values = h_closure.values()
-            closure_errors = h_closure.errors()
-            closure_bins = h_closure.axis().edges()
-            closure_bin_centers = (closure_bins[1:] + closure_bins[:-1]) / 2
-            ax0.errorbar(x=closure_bin_centers, y=closure_values, yerr=closure_errors,
-                         linestyle='-', color=Dark2_7.mpl_colors[i],
-                         label=couplings[i].replace('_','=').replace('p', '.') + ' (gen)')
         else:
             h = hists
 
@@ -159,6 +152,16 @@ def makePlot(observable, histograms, mass, process, couplings, xTitle, yTitle, o
                      label=couplings[i].replace('_','=').replace('p', '.') + ' (rwgt)')
 
         if closure:
+            closure_values = h_closure.values()
+            # scale to same area
+            # closure_values = closure_values * np.sum(values) / np.sum(closure_values)
+
+            closure_errors = h_closure.errors()
+            closure_bins = h_closure.axis().edges()
+            closure_bin_centers = (closure_bins[1:] + closure_bins[:-1]) / 2
+            ax0.errorbar(x=closure_bin_centers, y=closure_values, yerr=closure_errors,
+                         linestyle='-', color=Dark2_7.mpl_colors[i],
+                         label=couplings[i].replace('_','=').replace('p', '.') + ' (gen)')
             plot_ratio(closure_bins,
                 values, errors,
                 closure_values, closure_errors,

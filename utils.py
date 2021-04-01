@@ -10,7 +10,7 @@ def readxAOD(fname, treename="CollectionTree"):
   
     # get tree
     f = ROOT.TFile.Open(fname)
-    t = ROOT.xAOD.MakeTransientTree( f, treename) # Make the "transient tree"
+    t = ROOT.xAOD.MakeTransientTree( f, treename ) # Make the "transient tree"
   
     # Print some information:
     print( "Number of input events: %s" % t.GetEntries() )

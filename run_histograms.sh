@@ -120,7 +120,8 @@ python ${BASEDIR}/DAODreader.py /nfs/dust/atlas/user/pgadow/MC/TRUTH/101108/DAOD
 cd -
 
 
-# coupling closure for ZBHb mass 1400, reweight from 1p0 to 0p1, 0p4, 1p3, 1p6
+coupling closure for ZBHb mass 1400, reweight from 1p0 to 0p1, 0p4, 1p3, 1p6
+BASEDIR=${PWD}
 DIR_CLOSURE_COUPLINGS_ZBHb_1400="data/closure/couplings/ZBHb_1400"
 mkdir -p ${DIR_CLOSURE_COUPLINGS_ZBHb_1400}
 cd ${DIR_CLOSURE_COUPLINGS_ZBHb_1400}
